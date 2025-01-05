@@ -1,11 +1,18 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/todo-app';
+type CachedMongoose = {
+  conn: typeof mongoose | null;
+  promise: Promise<typeof mongoose> | null;
+};
+
+declare global {
+  var mongoose: CachedMongoose | undefined;
+}
+
+const MONGODB_URI = process.env.MONGODB_URI!;
 
 if (!MONGODB_URI) {
-  throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env'
-  );
+  throw new Error('Please define the MONGODB_URI environment variable inside .env.local');
 }
 
 console.log('MongoDB URI:', MONGODB_URI.replace(/:[^:]*@/, ':****@'));
@@ -16,9 +23,10 @@ if (!cached) {
   cached = global.mongoose = { conn: null, promise: null };
 }
 
-async function dbConnect() {
+async function dbConnect(): Promise<typeof mongoose> {
+  const cached = global.mongoose || { conn: null, promise: null };
+
   if (cached.conn) {
-    console.log('Using cached database connection');
     return cached.conn;
   }
 
@@ -27,32 +35,19 @@ async function dbConnect() {
       bufferCommands: false,
     };
 
-    console.log('Establishing new MongoDB connection...');
-    try {
-      cached.promise = mongoose.connect(MONGODB_URI, opts)
-        .then((mongoose) => {
-          console.log('MongoDB connected successfully!');
-          return mongoose;
-        })
-        .catch((error) => {
-          console.error('MongoDB connection error:', error);
-          throw error;
-        });
-    } catch (error) {
-      console.error('Error during MongoDB connection:', error);
-      throw error;
-    }
+    cached.promise = mongoose.connect(MONGODB_URI, opts).then((mongoose) => {
+      cached.conn = mongoose;
+      return mongoose;
+    });
   }
 
   try {
-    cached.conn = await cached.promise;
+    const mongoose = await cached.promise;
+    return mongoose;
   } catch (e) {
-    console.error('Failed to get MongoDB connection:', e);
     cached.promise = null;
     throw e;
   }
-
-  return cached.conn;
 }
 
 export default dbConnect;

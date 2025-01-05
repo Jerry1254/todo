@@ -3,13 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/contexts/AuthContext'
-import { TodoList } from '@/components/todo-list'
-
-interface Todo {
-  id: string;
-  text: string;
-  completed: boolean;
-}
+import { TodoList } from '@/components/todo-list-view'
+import { Todo } from '@/types/todo'
 
 export default function HomePage() {
   const router = useRouter()

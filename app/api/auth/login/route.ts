@@ -54,16 +54,18 @@ export async function POST(request: Request) {
       console.log('登录成功，返回响应');
       return response;
     } catch (error) {
-      console.error('用户验证失败:', error.message);
+      const errorMessage = error instanceof Error ? error.message : '未知错误';
+      console.error('用户验证失败:', errorMessage);
       return NextResponse.json(
-        { error: error.message },
+        { error: errorMessage },
         { status: 401 }
       );
     }
   } catch (error) {
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
     console.error('登录过程中发生错误:', error);
     return NextResponse.json(
-      { error: '登录失败，请稍后重试', details: error.message },
+      { error: '登录失败，请稍后重试', details: errorMessage },
       { status: 500 }
     );
   }

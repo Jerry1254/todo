@@ -58,8 +58,9 @@ export async function POST(request: Request) {
   } catch (error) {
     console.error('创建todo失败:', error);
     // 返回更详细的错误信息
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
     return NextResponse.json(
-      { error: '创建待办事项失败', details: error.message },
+      { error: '创建待办事项失败', details: errorMessage },
       { status: 500 }
     );
   }

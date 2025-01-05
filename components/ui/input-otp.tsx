@@ -1,16 +1,24 @@
 "use client"
 
 import * as React from "react"
-import { OTPInput, OTPInputContext } from "input-otp"
+import * as OTPInputPrimitive from "input-otp"
 import { Dot } from "lucide-react"
 
 import { cn } from "@/lib/utils"
 
+const OTPInputContext = React.createContext<{
+  slots: {
+    char: string
+    hasFakeCaret: boolean
+    isActive: boolean
+  }[]
+}>({ slots: [] })
+
 const InputOTP = React.forwardRef<
-  React.ElementRef<typeof OTPInput>,
-  React.ComponentPropsWithoutRef<typeof OTPInput>
+  React.ElementRef<typeof OTPInputPrimitive.OTPInput>,
+  React.ComponentPropsWithoutRef<typeof OTPInputPrimitive.OTPInput>
 >(({ className, containerClassName, ...props }, ref) => (
-  <OTPInput
+  <OTPInputPrimitive.OTPInput
     ref={ref}
     containerClassName={cn(
       "flex items-center gap-2 has-[:disabled]:opacity-50",
@@ -34,8 +42,7 @@ const InputOTPSlot = React.forwardRef<
   React.ElementRef<"div">,
   React.ComponentPropsWithoutRef<"div"> & { index: number }
 >(({ index, className, ...props }, ref) => {
-  const inputOTPContext = React.useContext(OTPInputContext)
-  const { char, hasFakeCaret, isActive } = inputOTPContext.slots[index]
+  const { char, hasFakeCaret, isActive } = React.useContext(OTPInputContext).slots[index]
 
   return (
     <div

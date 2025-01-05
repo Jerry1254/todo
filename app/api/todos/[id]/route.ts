@@ -34,8 +34,9 @@ export async function GET(
     return NextResponse.json(todo)
   } catch (error) {
     console.error('获取todo失败:', error)
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
     return NextResponse.json(
-      { error: '服务器错误' },
+      { error: '服务器错误', details: errorMessage },
       { status: 500 }
     )
   }
@@ -77,8 +78,9 @@ export async function PUT(
     return NextResponse.json(todo)
   } catch (error) {
     console.error('更新todo失败:', error)
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
     return NextResponse.json(
-      { error: '服务器错误' },
+      { error: '服务器错误', details: errorMessage },
       { status: 500 }
     )
   }
@@ -125,9 +127,10 @@ export async function PATCH(
     console.log('更新成功:', todo);
     return NextResponse.json(todo);
   } catch (error) {
-    console.error('更新todo失败:', error);
+    console.error('更新todo失败:', error)
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
     return NextResponse.json(
-      { error: '服务器错误', details: error.message },
+      { error: '服务器错误', details: errorMessage },
       { status: 500 }
     );
   }
@@ -164,8 +167,9 @@ export async function DELETE(
     return NextResponse.json({ success: true })
   } catch (error) {
     console.error('删除todo失败:', error)
+    const errorMessage = error instanceof Error ? error.message : '未知错误';
     return NextResponse.json(
-      { error: '服务器错误' },
+      { error: '服务器错误', details: errorMessage },
       { status: 500 }
     )
   }
