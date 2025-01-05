@@ -1,12 +1,14 @@
 {
-  "name": "my-v0-project",
+  "name": "todo-app",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "view-db": "ts-node scripts/view-db.ts",
+    "test-api": "node scripts/test-api.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.3.4",
