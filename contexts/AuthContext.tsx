@@ -39,39 +39,44 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
   const login = async (username: string, password: string) => {
     try {
+      console.log('开始登录请求:', { username, password: '***' });
+      
       const response = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })
-      })
+      });
 
-      const data = await response.json()
+      const data = await response.json();
+      console.log('登录响应:', { status: response.status, data });
 
       if (!response.ok) {
-        throw new Error(data.error || '登录失败，请稍后重试')
+        throw new Error(data.error || '登录失败，请稍后重试');
       }
 
-      if (!data.id || !data.username) {
-        throw new Error('服务器返回的用户数据无效')
-      }
+      const { user } = data;
+      console.log('登录成功，用户信息:', { ...user, id: '***' });
 
-      localStorage.setItem('user', JSON.stringify(data))
-      setState({ user: data, isLoading: false })
+      // 保存用户信息到 localStorage
+      localStorage.setItem('user', JSON.stringify(user));
       
+      // 更新状态
+      setState({ user, isLoading: false });
+
       toast({
         title: "登录成功",
-        description: `欢迎回来，${data.username}！`
-      })
+        description: `欢迎回来，${user.username}！`
+      });
     } catch (error) {
-      const message = error instanceof Error ? error.message : '登录失败，请稍后重试'
+      console.error('登录失败:', error);
       toast({
         variant: "destructive",
         title: "登录失败",
-        description: message
-      })
-      throw error
+        description: error instanceof Error ? error.message : '登录失败，请稍后重试'
+      });
+      throw error;
     }
-  }
+  };
 
   const register = async (username: string, password: string) => {
     try {
@@ -132,4 +137,3 @@ export const useAuth = () => {
   }
   return context
 }
-

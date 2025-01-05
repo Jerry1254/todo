@@ -6,7 +6,9 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "next lint"
+    "lint": "next lint",
+    "view-db": "ts-node scripts/view-db.ts",
+    "test-api": "node scripts/test-api.mjs"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.9.1",
@@ -64,12 +66,15 @@
   },
   "devDependencies": {
     "@types/node": "^22",
+    "@types/node-fetch": "^2.6.12",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "autoprefixer": "^10.4.20",
+    "node-fetch": "^3.3.2",
     "postcss": "^8.4.49",
     "tailwindcss": "^3.4.17",
     "tailwindcss-animate": "^1.0.7",
+    "ts-node": "^10.9.2",
     "typescript": "^5"
   }
 }

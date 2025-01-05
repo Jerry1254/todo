@@ -83,146 +83,140 @@ const initialTodos: TodoItem[] = [
 ]
 
 export function TodoProvider({ children }: { children: ReactNode }) {
-  const [todos, setTodos] = useState<TodoItem[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('todos')
-      return saved ? JSON.parse(saved) : initialTodos
-    }
-    return initialTodos
-  })
+  const [todos, setTodos] = useState<TodoItem[]>([]);
+  const [categories, setCategories] = useState<Category[]>(initialCategories);
 
-  const [categories, setCategories] = useState<Category[]>(() => {
-    if (typeof window !== 'undefined') {
-      const saved = localStorage.getItem('categories')
-      return saved ? JSON.parse(saved) : initialCategories
+  // 获取所有待办事项
+  const fetchTodos = async () => {
+    try {
+      const response = await fetch('/api/todos');
+      if (!response.ok) {
+        throw new Error('获取待办事项失败');
+      }
+      const data = await response.json();
+      setTodos(data);
+      updateCategoryCounts();
+    } catch (error) {
+      console.error('获取待办事项失败:', error);
     }
-    return initialCategories
-  })
+  };
 
+  // 在组件加载时获取待办事项
   useEffect(() => {
-    localStorage.setItem('todos', JSON.stringify(todos))
-    updateCategoryCounts()
-  }, [todos])
+    fetchTodos();
+  }, []);
 
-  useEffect(() => {
-    localStorage.setItem('categories', JSON.stringify(categories))
-  }, [categories])
+  // 添加待办事项
+  const addTodo = async (text: string, category: string, parentId?: string) => {
+    try {
+      const response = await fetch('/api/todos', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          text,
+          category,
+          date: new Date().toISOString().slice(0, 10),
+          startTime: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}),
+          duration: 1,
+        }),
+      });
 
-  const addTodo = (text: string, category: string, parentId?: string) => {
-    const newTodo = {
-      id: uuidv4(),
-      text,
-      category,
-      completed: false,
-      date: new Date().toISOString().slice(0, 10), // 添加日期
-      startTime: new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}), // 添加开始时间
-      duration: 1 // 添加持续时间
-    }
-
-    setTodos(prevTodos => {
-      if (!parentId) {
-        return [...prevTodos, newTodo]
+      if (!response.ok) {
+        throw new Error('添加待办事项失败');
       }
 
-      return prevTodos.map(todo => {
-        if (todo.id === parentId) {
-          return {
-            ...todo,
-            subtasks: [...(todo.subtasks || []), newTodo]
-          }
-        }
-        return todo
-      })
-    })
-  }
+      const newTodo = await response.json();
+      setTodos(prevTodos => [...prevTodos, newTodo]);
+      updateCategoryCounts();
+    } catch (error) {
+      console.error('添加待办事项失败:', error);
+    }
+  };
 
-  const toggleTodo = (id: string) => {
-    setTodos(prevTodos => {
-      // 首先找到并更新要切换状态的任务
-      const toggleTodoItem = (items: TodoItem[]): TodoItem[] => {
-        return items.map(todo => {
-          if (todo.id === id) {
-            return { ...todo, completed: !todo.completed }
-          }
-          if (todo.subtasks) {
-            return {
-              ...todo,
-              subtasks: toggleTodoItem(todo.subtasks)
-            }
-          }
-          return todo
-        })
+  // 切换待办事项状态
+  const toggleTodo = async (id: string) => {
+    try {
+      const todo = todos.find(t => t.id === id);
+      if (!todo) return;
+
+      const response = await fetch(`/api/todos/${id}`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completed: !todo.completed,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error('更新待办事项失败');
       }
-    
-      const updatedTodos = toggleTodoItem(prevTodos)
-    
-      // 然后重新排序：未完成的在前，已完成的在后
-      return updatedTodos.sort((a, b) => {
-        if (a.completed === b.completed) return 0
-        return a.completed ? 1 : -1
-      })
-    })
-  }
+
+      const updatedTodo = await response.json();
+      setTodos(prevTodos =>
+        prevTodos.map(t => (t.id === id ? updatedTodo : t))
+      );
+      updateCategoryCounts();
+    } catch (error) {
+      console.error('更新待办事项失败:', error);
+    }
+  };
+
+  // 删除待办事项
+  const deleteTodo = async (id: string) => {
+    try {
+      const response = await fetch(`/api/todos/${id}`, {
+        method: 'DELETE',
+      });
+
+      if (!response.ok) {
+        throw new Error('删除待办事项失败');
+      }
+
+      setTodos(prevTodos => prevTodos.filter(t => t.id !== id));
+      updateCategoryCounts();
+    } catch (error) {
+      console.error('删除待办事项失败:', error);
+    }
+  };
 
   const updateCategoryCounts = () => {
-    const counts: { [key: string]: number } = {}
-    
-    const countTodos = (items: TodoItem[]) => {
-      items.forEach(todo => {
-        if (!todo.completed) { // 只统计未完成的任务
-          counts[todo.category] = (counts[todo.category] || 0) + 1
-        }
-        if (todo.subtasks) {
-          countTodos(todo.subtasks)
-        }
-      })
-    }
-
-    countTodos(todos)
+    const counts = todos.reduce((acc, todo) => {
+      acc[todo.category] = (acc[todo.category] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
 
     setCategories(prevCategories =>
       prevCategories.map(cat => ({
         ...cat,
-        count: counts[cat.name] || 0
+        count: counts[cat.name] || 0,
       }))
-    )
-  }
+    );
+  };
 
   const clearTodos = () => {
-    setTodos([])
-    updateCategoryCounts()
-  }
-
-  const deleteTodo = (id: string) => {
-    setTodos(prevTodos => {
-      const deleteTodoItem = (items: TodoItem[]): TodoItem[] => {
-        return items.filter(todo => {
-          if (todo.id === id) {
-            return false
-          }
-          if (todo.subtasks) {
-            todo.subtasks = deleteTodoItem(todo.subtasks)
-          }
-          return true
-        })
-      }
-      return deleteTodoItem(prevTodos)
-    })
-  }
+    setTodos([]);
+    updateCategoryCounts();
+  };
 
   return (
-    <TodoContext.Provider value={{ 
-      todos, 
-      categories, 
-      addTodo, 
-      toggleTodo, 
-      updateCategoryCounts,
-      clearTodos,
-      deleteTodo  // 添加到 Provider 中
-    }}>
+    <TodoContext.Provider
+      value={{
+        todos,
+        categories,
+        addTodo,
+        toggleTodo,
+        updateCategoryCounts,
+        clearTodos,
+        deleteTodo,
+      }}
+    >
       {children}
     </TodoContext.Provider>
-  )
+  );
 }
 
 export const useTodo = () => {
@@ -232,4 +226,3 @@ export const useTodo = () => {
   }
   return context
 }
-
