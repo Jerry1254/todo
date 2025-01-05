@@ -1,9 +1,11 @@
 import { User } from '@/types/auth'
 import dbConnect from './mongodb'
 import UserModel from '@/models/User'
-import { hash, compare } from 'bcrypt'
+import { createHash } from 'crypto'
 
-const SALT_ROUNDS = 10
+function hashPassword(password: string): string {
+  return createHash('sha256').update(password).digest('hex')
+}
 
 export async function createUser(username: string, password: string): Promise<User> {
   await dbConnect()
@@ -15,7 +17,7 @@ export async function createUser(username: string, password: string): Promise<Us
   }
 
   // 对密码进行加密
-  const hashedPassword = await hash(password, SALT_ROUNDS)
+  const hashedPassword = hashPassword(password)
 
   // 创建新用户
   const user = await UserModel.create({
@@ -36,8 +38,8 @@ export async function validateUser(username: string, password: string): Promise<
     throw new Error('用户不存在')
   }
   
-  const isValid = await compare(password, user.password)
-  if (!isValid) {
+  const hashedPassword = hashPassword(password)
+  if (hashedPassword !== user.password) {
     throw new Error('密码错误')
   }
 
